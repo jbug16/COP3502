@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MAX_STR_LEN 1000
+
 struct stack {
     int data;
     struct stack *next;
@@ -33,53 +35,21 @@ int main() {
     }
     values[n] = '\0';
 
-    // Set up stack
+    // Set up empty stack
     struct stack* myStackPtr;
     init(&myStackPtr);
 
-    char next;
-    while (scanf(" %c", &next) == 1) {
+    // Read in equation input
+    char equation[MAX_STR_LEN] = {0};
+    scanf(" %[^\n]", equation);
 
-        // Push the char onto the stack
-        if (isalpha(next)) {
-            int index = toupper(next) - 'A';
-            int nextInt = convertToBinary(values[index]);
-            push(&myStackPtr, nextInt);
-        }
-        // Not operator
-        else if (next == '-') {
-            struct stack* temp = pop(&myStackPtr);
-            int val1 = temp->data;
-            free(temp);
+    printf("%s\n", equation);
 
-            // Evaluate with operator
-            int result = 0;
-            result = !val1;
-            printf("!%d = %d\n", val1, result);
+    // Go through each item
+    //char next;
 
-            push(&myStackPtr, result);
-        }
-        // Got an operator
-        else {
-            struct stack* temp = pop(&myStackPtr);
-            int val2 = temp->data;
-            free(temp);
-            temp = pop(&myStackPtr);
-            int val1 = temp->data;
-            free(temp);
-
-            // Evaluate with operator
-            int result = -1;
-            if (next == '*') result = val1 && val2;
-            else if (next == '+') result = val1 || val2;
-            printf("%d %c %d = %d\n", val1, next, val2, result);
-
-            push(&myStackPtr, result);
-        }
-    }
-
-    struct stack* temp = pop(&myStackPtr);
-    printf("%c\n", convertToText(temp->data));
+    //struct stack* temp = pop(&myStackPtr);
+    //printf("The value is: %c\n", convertToText(temp->data));
 
     // Clean up
     free(values);
@@ -87,6 +57,7 @@ int main() {
     return 0;
 }
 
+// Following imported from class notes
 void init(struct stack **front) {
     *front = NULL;
 }
@@ -124,6 +95,7 @@ int top(struct stack *front) {
     return front != NULL ? front->data : -1;
 }
 
+// Custom functions
 int convertToBinary(char value) {
     return value == 'T' ? 1 : 0;
 }
