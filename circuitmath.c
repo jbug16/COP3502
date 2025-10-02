@@ -28,7 +28,7 @@ int main() {
     int n;
     scanf("%d", &n);
 
-    // Get true of false for each variable
+    // Get true or false for each variable
     char* values = malloc((n+1) * sizeof(char));
     for (int i = 0; i < n; i++) {
         scanf(" %c", &values[i]);
@@ -41,15 +41,63 @@ int main() {
 
     // Read in equation input
     char equation[MAX_STR_LEN] = {0};
-    scanf(" %[^\n]", equation);
-
-    printf("%s\n", equation);
+    scanf(" %[^\n]", equation); // reads the whole line
 
     // Go through each item
-    //char next;
+    int len = strlen(equation);
+    int index = 0;
+    for (int i = 0; i < len; i++) {
+        // Read the next item
+        char next = equation[i];
 
-    //struct stack* temp = pop(&myStackPtr);
-    //printf("The value is: %c\n", convertToText(temp->data));
+        // Skip if it is a space
+        if (isspace(next)) continue;
+
+        // Check if this is a letter
+        if (isalpha(next)) {
+            printf("%c = %c\n", next, values[index]);
+
+            // Convert to 0 or 1 based on the values array
+            int binaryValue = convertToBinary(values[index]);
+            index++; // increment so we know which letter it is
+
+            // Push to stack
+            push(&myStackPtr, binaryValue);
+        }
+        // Is the negative operator
+        else if (next == '-') {
+            struct stack* tmp = pop(&myStackPtr);
+            int val = tmp->data;
+            free(tmp);
+
+            int result = !val;
+            //printf("%c = %c -> %c\n", val, values[index], result);
+
+            // Push the result onto the stack
+            push(&myStackPtr, result);
+        }
+        // This is an operator (AND or OR)
+        else {
+            struct stack* tmp = pop(&myStackPtr);
+            int val2 = tmp->data;
+            free(tmp);
+            tmp = pop(&myStackPtr);
+            int val1 = tmp->data;
+            free(tmp);
+
+            // Evaluate the equation
+            int result = -1;
+            if (next == '*') result = val1 && val2; // AND
+            else if (next == '+') result = val1 || val2; // OR
+
+            // Push the result onto the stack
+            push(&myStackPtr, result);
+        }
+    }
+
+    // Pop and print!!!! -_-
+    struct stack* temp = pop(&myStackPtr);
+    printf("The value is: %c\n", convertToText(temp->data));
 
     // Clean up
     free(values);
