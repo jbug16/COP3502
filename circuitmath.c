@@ -55,28 +55,31 @@ int main() {
 
         // Check if this is a letter
         if (isalpha(next)) {
-            printf("%c = %c\n", next, values[index]);
+            //printf("%c = %c\n", next, values[index]);
 
             // Convert to 0 or 1 based on the values array
             int binaryValue = convertToBinary(values[index]);
             index++; // increment so we know which letter it is
+            /*  probably would've been easier to add the letter & value
+                to the struct to keep track, but it's too late now :))) */
 
             // Push to stack
             push(&myStackPtr, binaryValue);
         }
         // Is the negative operator
         else if (next == '-') {
+            // We only need to get one val since it's NOT
             struct stack* tmp = pop(&myStackPtr);
             int val = tmp->data;
             free(tmp);
 
-            int result = !val;
-            //printf("%c = %c -> %c\n", val, values[index], result);
+            int result = !val; // inverse of val
+            //printf("%d -> %d\n", val, result);
 
             // Push the result onto the stack
             push(&myStackPtr, result);
         }
-        // This is an operator (AND or OR)
+        // This is an operator (AND, OR)
         else {
             struct stack* tmp = pop(&myStackPtr);
             int val2 = tmp->data;
@@ -87,8 +90,8 @@ int main() {
 
             // Evaluate the equation
             int result = -1;
-            if (next == '*') result = val1 && val2; // AND
-            else if (next == '+') result = val1 || val2; // OR
+            if (next == '*') result = val1 && val2;         // AND
+            else if (next == '+') result = val1 || val2;    // OR
 
             // Push the result onto the stack
             push(&myStackPtr, result);
@@ -97,7 +100,7 @@ int main() {
 
     // Pop and print!!!! -_-
     struct stack* temp = pop(&myStackPtr);
-    printf("The value is: %c\n", convertToText(temp->data));
+    printf("%c", convertToText(temp->data));
 
     // Clean up
     free(values);
