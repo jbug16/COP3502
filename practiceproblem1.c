@@ -1,45 +1,57 @@
-//
-// Created by Jenna Curls on 8/25/25.
-//
-
-/* 1) Write a program that has a few functions that perform the following tasks:
-a) A function that takes in an integer n, representing the number of items, and an integer,
-max, representing the maximum possible item, dynamically allocates an integer array of
-size n where each number is randomly selected in between 1 and max, inclusive, and
-returns a pointer to this newly created array.
-b) A function that takes in an array and its size, and prints out the contents of the array.
-c) A function that takes in an array and its size, and returns the maximum value in the
-array.
-d) A function that takes in an array and its size, and returns the average of the values in
-the array.
-Have your program call the function to generate the array, and then, with this array, print it, its
-maximum value and its average. Feel free to add other features to the program. At the end of the
-program, free the memory for the array. */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-int* createArrayPtr(int n, int max);
+struct Node {
+    int data;
+    struct Node* next;
+} Node;
 
-int main() {
-    int* arr = createArrayPtr(4, 2);
-    for (int i = 0; i < 4; i++) {
-        printf("%d\n", arr[i]);
-    }
-
-    free(arr);
-
-    return 0;
+struct Node* createNode(int data) {
+    struct Node* head = malloc(sizeof(Node));
+    head->data = data;
+    return head;
 }
 
-int* createArrayPtr(int n, int max) {
-    // Dynamically allocate an int array of size n
-    int* arr = malloc(sizeof(n));
+void print(struct Node* head) {
+    if (head == NULL) {
+        printf("\n");
+        return;
+    }
+    printf("%d ", head->data);
+    print(head->next);
+}
 
-    for (int i = 0; i < n; i++) {
-        arr[i] = rand() % (max+1);
+struct Node* del(struct Node* head, int delVal) {
+    if (head == NULL) return head; // base case
+
+    // Compare the current data to the delval
+    if (head->data == delVal) {
+        struct Node* temp = head->next; // store our next node
+        free(head); // free the node
+        return del(temp, delVal); // go to the next one and check
     }
 
-    return arr;
+    // Link any node together if there was a deletion
+    // Also check if head->next = delval
+    head->next = del(head->next, delVal);
+    return head;
+}
+
+int main() {
+
+    struct Node* list = createNode(1);
+    list->next = createNode(2);
+    list->next->next = createNode(2);
+    list->next->next->next = createNode(3);
+    list->next->next->next->next = NULL;
+
+    print(list);
+
+    del(list, 2);
+    print(list);
+
+    free(list);
+
+    return 0;
 }
