@@ -77,9 +77,12 @@ int main() {
 
 // Create a player 'object' and set all scores to 0, init all player variables
 Player* createNewPlayer() {
-    Player* player = malloc(sizeof(Player));
-    player->name = malloc(MAXSIZE * sizeof(char));
-    for (int i = 0; i < TOTAL; i++) {
+    Player* player = malloc(sizeof(Player)); // player object
+
+    player->name = malloc((MAXSIZE+1) * sizeof(char)); // name
+
+    // Init each score (and total) to 0
+    for (int i = 0; i < NUMGAMES; i++) {
         player->scores[i] = 0;
     }
 
@@ -88,16 +91,17 @@ Player* createNewPlayer() {
 
 // Debug print
 void printScores(Player* player) {
-    printf("%s\n", player->name);
+    printf("%s\n", player->name); // name
     for (int i = 0; i < TOTAL; i++) {
-        printf("\t%s = %d\n", GAMES[i], player->scores[i]);
+        printf("\t%s = %d\n", GAMES[i], player->scores[i]); // each score for each game
     }
-    printf("\tTotal = %d\n", player->scores[TOTAL]);
+    printf("\tTotal = %d\n", player->scores[TOTAL]); // total score
 }
 
 // Print the ranked list
 void printList(int playerCount, Player** list, int game) {
     printf("%s Ranklist\n", GAMES[game]);
+
     for (int i = 0; i < playerCount; i++) {
         printf("%d. %-15s %d\n", i+1, list[i]->name, list[i]->scores[game]);
     }
@@ -129,10 +133,11 @@ int compare(Player* ptrP1, Player* ptrP2, int key) {
 int isSorted(Player** list, int low, int high, int game) {
     // Return false if any adjacent pair is out of order.
     for (int i = low; i < high; i++) {
-        if (compare(list[i], list[i+1], game) > 0) return 0;
+        if (compare(list[i], list[i+1], game) > 0)
+            return 0; // false
     }
 
-    return 1;
+    return 1; // true
 }
 
 // Swaps the players pointed to by a and b.
@@ -190,6 +195,12 @@ void quickSortRec(Player** list, int low, int high, int key) {
     // If already sorted, just exit
     if (isSorted(list, low, high, key)) return;
 
+    // Hybrid base case - use bubble sort if small enough
+    if (high - low + 1 <= BASECASESIZE) {
+        bubbleSort(list + low, high - low + 1, key);
+        return;
+    }
+
     // Split the array to sort each side
     int split = partition(list, low, high, key);
     quickSortRec(list, low, split - 1, key);
@@ -199,34 +210,5 @@ void quickSortRec(Player** list, int low, int high, int key) {
 // Quick Sorts the array list of size n according to the game
 // indicated by the integer key.
 void quickSort(Player** list, int n, int key) {
-    // Use a different sorting algorithm if the subarray size is <= 30
-    if (n <= BASECASESIZE) {
-        printf("using bubble sort\n");
-        bubbleSort(list, n, key);
-    }
-
-    // Else, just use quick sort
     quickSortRec(list, 0, n - 1, key);
 }
-
-/*
-7
-james 200 100 50 300 500 700
-marnie 500 50 50 50 700 300
-abbie 100 100 100 100 100 100
-zach 0 200 500 800 300 100
-emery 400 300 200 100 100 0
-mabel 50 40 30 80 70 90
-dave 600 200 300 100 0 0
-3
-
-7
-james 200 100 50 300 500 700
-marnie 500 50 50 50 700 300
-abbie 100 100 100 100 100 100
-zach 0 200 500 800 300 100
-emery 400 300 200 100 100 0
-mabel 50 40 30 80 70 90
-dave 600 200 300 100 0 0
-6
-*/
