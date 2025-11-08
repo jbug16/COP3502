@@ -21,20 +21,24 @@ typedef struct Player {
 // Function definitions
 Player* createNewPlayer();
 void printScores(Player* player);
-void printList(int playerCount, Player** players, int game);
+void printList(int playerCount, Player** list, int game);
 int compare(Player* ptrP1, Player* ptrP2, int key);
+int isSorted(Player** list, int low, int high, int game);
+void swap(Player** a, Player** b);
+void bubbleSort(Player** list, int n, int key);
 void mergeSort(Player** list, int n, int key);
 void mergeSortRec(Player** list, int low, int high, int key);
-int isSorted(int values[], int length);
+void merge(Player** list, int low, int mid, int high, int key);
 
 int main() {
-    // Get input and create players/set scores
+    // How many players are there
     int playerCount;
     scanf("%d", &playerCount);
 
+    // Create list of players
     Player** players = malloc(sizeof(Player*) * playerCount);
     for (int i = 0; i < playerCount; i++) {
-        // Create the player
+        // Create the individual player
         players[i] = createNewPlayer();
 
         // Get and set player name
@@ -51,17 +55,19 @@ int main() {
         players[i]->scores[TOTAL] = total;
     }
 
+    // What game are we trying to rank
     int game;
     scanf("%d", &game);
 
-    // Sort
+    // Sort the list (ranking them)
+    mergeSort(players, playerCount, game);
 
-
-    // Test print
+    // Print
     printList(playerCount, players, game);
 
     // Clean up
     for (int i = 0; i < playerCount; i++) {
+        free(players[i]->name);
         free(players[i]);
     }
     free(players);
@@ -69,16 +75,21 @@ int main() {
     return 0;
 }
 
+// Create a player 'object' and set all scores to 0, init all player variables
 Player* createNewPlayer() {
-    Player* player = malloc(sizeof(Player));
-    player->name = malloc(MAXSIZE * sizeof(char));
-    for (int i = 0; i < TOTAL; i++) {
+    Player* player = malloc(sizeof(Player)); // player object
+
+    player->name = malloc((MAXSIZE+1) * sizeof(char)); // name
+
+    // Init each score (and total) to 0
+    for (int i = 0; i < NUMGAMES; i++) {
         player->scores[i] = 0;
     }
 
     return player;
 }
 
+// Debug print
 void printScores(Player* player) {
     printf("%s\n", player->name);
     for (int i = 0; i < TOTAL; i++) {
@@ -88,9 +99,10 @@ void printScores(Player* player) {
 }
 
 // Print the ranked list
-void printList(int playerCount, Player** players, int game) {
+void printList(int playerCount, Player** list, int game) {
+    printf("%s Ranklist\n", GAMES[game]);
     for (int i = 0; i < playerCount; i++) {
-        printf("%d. %-15s %d\n", i+1, players[i]->name, players[i]->scores[game]);
+        printf("%d. %-15s %d\n", i+1, list[i]->name, list[i]->scores[game]);
     }
 }
 
@@ -116,51 +128,41 @@ int compare(Player* ptrP1, Player* ptrP2, int key) {
     return 0;
 }
 
+// Returns whether the list is sorted or not
+int isSorted(Player** list, int low, int high, int game) {
+    // Return false if any adjacent pair is out of order.
+    for (int i = low; i < high; i++) {
+        if (compare(list[i], list[i+1], game) > 0) return 0;
+    }
+
+    return 1;
+}
+
+// Swaps the players pointed to by a and b.
+void swap(Player** a, Player** b) {
+    Player* temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+// Bubble sort algorithm from sort.c
+void bubbleSort(Player** list, int n, int key) {
+    // i is how far we go in the inner loop.
+    for (int i=n-2; i>=0; i--) {
+        // j battles j+1
+        for (int j=0; j<=i; j++) {
+            // Out of order, swap.
+            if (compare(list[j], list[j+1], key) > 0) {
+                swap(&list[j], &list[j+1]);
+            }
+        }
+    }
+}
+
 // Merge Sorts the array list of size n according to the game
 // indicated by the integer key.
 void mergeSort(Player** list, int n, int key) {
-    //printf("merge %d, %d, %d\n", start, middle, end);
-
-    int *temp, i, length, count1, count2, mc;
-
-    // Allocate the proper amount of space for our auxiliary array.
-    length = end - start + 1;
-    temp = (int*)calloc(length, sizeof(int));
-
-    // These will be our indexes into our two sorted lists.
-    count1 = start;
-    count2 = middle;
-
-    // Keeps track of our index into our auxiliary array.
-    mc = 0;
-
-    // Here we copy values into our auxiliary array, so long as there are
-    // numbers from both lists to copy.
-    while ((count1 < middle) || (count2 <= end)) {
-
-        // Next value to copy comes from list one - make sure list
-        // one isn't exhausted yet. Also make sure we don't access index
-        // count2 if we aren't supposed to.
-        if (count2 > end || (count1 < middle && values[count1] < values[count2])) {
-            temp[mc] = values[count1];
-            count1++;
-            mc++;
-        }
-
-        // We copy the next value from list two.
-        else {
-            temp[mc] = values[count2];
-            count2++;
-            mc++;
-        }
-    }
-
-    // Copy back all of our values into the original array.
-    for (i=start; i<=end; i++)
-        values[i] = temp[i - start];
-
-    // Don't need this space any more!
-    free(temp);
+    mergeSortRec(list, 0, n - 1, key);
 }
 
 // Performs a Merge Sort on list[low..high] according to the game
@@ -168,6 +170,12 @@ void mergeSort(Player** list, int n, int key) {
 void mergeSortRec(Player** list, int low, int high, int key) {
     // Check if our sorting range is more than one element.
     if (low < high) {
+
+        // Hybrid base case - use bubble sort if small enough
+        if (high - low + 1 <= BASECASESIZE) {
+            bubbleSort(list + low, high - low + 1, key);
+            return;
+        }
 
         int mid = (low + high) / 2;
 
@@ -178,27 +186,48 @@ void mergeSortRec(Player** list, int low, int high, int key) {
         mergeSortRec(list, mid+1, high, key);
 
         // Put it all together.
-        mergeSort(list, low, mid+1, high, key);
+        merge(list, low, mid+1, high, key);
     }
 }
 
-int isSorted(int values[], int length) {
-    // Return false if any adjacent pair is out of order.
-    for (int i = 0; i < length-1; i++) {
-        if (values[i] > values[i+1]) return 0;
+// Actually doing the merging. From notes.
+void merge(Player** list, int low, int mid, int high, int key) {
+    // Allocate the proper amount of space for our auxiliary array.
+    int length = high - low + 1;
+    Player** temp = calloc(length, sizeof(Player*));
+
+    // These will be our indexes into our two sorted lists.
+    int count1 = low;
+    int count2 = mid;
+
+    // Keeps track of our index into our auxiliary array.
+    int mc = 0;
+
+    // Here we copy values into our auxiliary array, so long as there are
+    // numbers from both lists to copy.
+    while ((count1 < mid) || (count2 <= high)) {
+
+        // Next value to copy comes from list one - make sure list
+        // one isn't exhausted yet. Also make sure we don't access index
+        // count2 if we aren't supposed to.
+        if (count2 > high || (count1 < mid && compare(list[count1], list[count2], key) <= 0)) {
+            temp[mc] = list[count1];
+            count1++;
+            mc++;
+        }
+
+        // We copy the next value from list two.
+        else {
+            temp[mc] = list[count2];
+            count2++;
+            mc++;
+        }
     }
 
-    return 1;
-}
+    // Copy back all of our values into the original array.
+    for (int i = low; i <= high; i++)
+        list[i] = temp[i - low];
 
-/*
-7
-james 200 100 50 300 500 700
-marnie 500 50 50 50 700 300
-abbie 100 100 100 100 100 100
-zach 0 200 500 800 300 100
-emery 400 300 200 100 100 0
-mabel 50 40 30 80 70 90
-dave 600 200 300 100 0 0
-3
-*/
+    // Don't need this space anymore!
+    free(temp);
+}
