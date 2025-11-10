@@ -29,13 +29,14 @@ BST_Node* find(BST_Node* curr, BST_Node* target);
 int wordExistsInOtherGame(BST_Node* root, int game);
 
 BST_Node* addWord(BST_Node* root, int game, char* word);
-void deleteWord(int game, char* word);
+BST_Node* deleteWord(BST_Node* root, int game, char* word);
 void whichGame(char* word);
 char** allStringsInGame(BST_Node* root, int gameNo, int* arrSize);
 void sameLengthWords(int game, int length);
 void nextWord(BST_Node* root);
 
 void printTree(BST_Node* root);
+void printGames(BST_Node* root);
 
 /*
 1. Add a string to a game.
@@ -72,7 +73,7 @@ int main() {
             // ex: 2 0 hello (delete string "hello" from game 0)
             case 2:
                 scanf("%d %s", &game, str);
-                deleteWord(game, str);
+                deleteWord(root, game, str);
                 break;
 
             // ex: 3 bye (checks if "bye" is in any of the games, return -1 if no)
@@ -105,6 +106,8 @@ int main() {
     }
 
     printTree(root);
+    printf("\n");
+    printGames(root);
 
     // Clean up
 
@@ -171,7 +174,7 @@ BST_Node* find(BST_Node* curr, BST_Node* target) {
     }
 
     // Null case.
-    else return NULL;
+    return NULL;
 }
 
 int wordExistsInOtherGame(BST_Node* root, int game) {
@@ -206,8 +209,12 @@ BST_Node* addWord(BST_Node* root, int game, char* word) {
     return root;
 }
 
-void deleteWord(int game, char* word) {
+BST_Node* deleteWord(BST_Node* root, int game, char* word) {
+    // Debug
     printf("Deleting \"%s\" from game %d...\n", word, game);
+
+    
+    return NULL;
 }
 
 void whichGame(char* word) {
@@ -233,4 +240,11 @@ void printTree(BST_Node* root) {
     printTree(root->left);
     printf("%s ", root->ptr->str);
     printTree(root->right);
+}
+
+void printGames(BST_Node* root) {
+    if (root == NULL) return;
+    for (int i = 0; i < NUMGAMES; i++) {
+        printf("%d ", root->ptr->allowed[i]);
+    }
 }
