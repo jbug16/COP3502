@@ -24,9 +24,7 @@ typedef struct BST_Node {
 NYT_String* createString(const char* word, int game);
 BST_Node* createNode(const char* word, int game);
 BST_Node* insert(BST_Node* root, BST_Node* node);
-BST_Node* find(BST_Node* curr, BST_Node* target);
-
-int wordExistsInOtherGame(BST_Node* root, int game);
+BST_Node* find(BST_Node* curr, char* word);
 
 BST_Node* addWord(BST_Node* root, int game, char* word);
 BST_Node* deleteWord(BST_Node* root, int game, char* word);
@@ -62,7 +60,7 @@ int main() {
 
         // Determine the data to print depending on the requested operation
         int game, length;
-        char str[MAXSIZE];
+        char str[MAXSIZE+1];
         switch (op) {
             // ex: 1 0 hello (add string "hello" to game 0)
             case 1:
@@ -105,6 +103,10 @@ int main() {
         }
     }
 
+    BST_Node* found = find(root, "hello");
+    if (!found) printf("NULL\n");
+    if (!root->left) printf("left NULL\n");
+    if (!root->right) printf("right NULL\n");
     printTree(root);
     printf("\n");
     printGames(root);
@@ -118,11 +120,11 @@ int main() {
 NYT_String* createString(const char* word, const int game) {
     // Init the nyt data
     NYT_String* nyt = malloc(sizeof(NYT_String));
-    nyt->str = malloc(sizeof(char) * MAXSIZE);  // the actual word
-    strcpy(nyt->str, word);                         // copy because that's how c work ig
-    for (int i = 0; i < NUMGAMES; i++)              // set all games to false (0)
+    nyt->str = malloc(sizeof(char) * (strlen(word) + 1));  // the actual word
+    strcpy(nyt->str, word);                                     // copy because that's how c work ig
+    for (int i = 0; i < NUMGAMES; i++)                          // set all games to false (0)
         nyt->allowed[i] = 0;
-    nyt->allowed[game] = 1;                         // sets this game's index to true (1)
+    nyt->allowed[game] = 1;                                     // sets this game's index to true (1)
 
     return nyt; // return pointer to the nyt data
 }
@@ -155,36 +157,26 @@ BST_Node* insert(BST_Node* root, BST_Node* node) {
     return root;
 }
 
-BST_Node* find(BST_Node* curr, BST_Node* target) {
+BST_Node* find(BST_Node* curr, char* word) {
 
     // Check if there are nodes in the tree.
     if (curr != NULL) {
 
         // Found the value at the root.
-        if (strcmp(curr->ptr->str, target->ptr->str) == 0)
+        if (strcmp(word, curr->ptr->str) == 0)
             return curr;
 
         // Search to the left.
-        if (strcmp(curr->ptr->str, target->ptr->str) < 0)
-            return find(curr->left, target);
+        if (strcmp(word, curr->ptr->str) < 0)
+            return find(curr->left, word);
 
         // Or...search to the right.
-        if (strcmp(curr->ptr->str, target->ptr->str) > 0)
-            return find(curr->right, target);
+        if (strcmp(word, curr->ptr->str) > 0)
+            return find(curr->right, word);
     }
 
     // Null case.
     return NULL;
-}
-
-int wordExistsInOtherGame(BST_Node* root, int game) {
-    BST_Node* curr = find(root, root);
-
-    if (curr != NULL) {
-        if (curr->ptr->allowed[game] == 0) return 1;
-    }
-
-    return 0;
 }
 
 // Operation functions
@@ -192,15 +184,18 @@ BST_Node* addWord(BST_Node* root, int game, char* word) {
     // Debug
     printf("Adding \"%s\" to game %d...\n", word, game);
 
-    // Check if this word already exists for a different game
-    if (wordExistsInOtherGame(root, game)) {
-        // Just add it to a different game
-        root->ptr->allowed[game] = 1;
+    // Does the node already exist?
+    BST_Node* node = find(root, word);
+
+    // Check if this word is in a game
+    if (node != NULL) {
+        // Just add it to the new game
+        node->ptr->allowed[game] = 1;
     }
     // If not
     else {
         // Create this word
-        BST_Node* node = createNode(word, game);
+        node = createNode(word, game);
 
         // Inset this node into the tree
         root = insert(root, node);
