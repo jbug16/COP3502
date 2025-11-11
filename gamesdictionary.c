@@ -25,10 +25,17 @@ NYT_String* createString(const char* word, int game);
 BST_Node* createNode(const char* word, int game);
 BST_Node* insert(BST_Node* root, BST_Node* node);
 BST_Node* find(BST_Node* curr, char* word);
+int isLeaf(BST_Node* node);
+int hasOnlyLeftChild(BST_Node* node);
+int hasOnlyRightChild(BST_Node* node);
+BST_Node* minVal(BST_Node* root);
+BST_Node* removeFromGame(BST_Node* root, int game, char* word);
+BST_Node* deleteNode(BST_Node* root, char* word);
+void freeNode(BST_Node* root);
 
 BST_Node* addWord(BST_Node* root, int game, char* word);
 BST_Node* deleteWord(BST_Node* root, int game, char* word);
-void whichGame(char* word);
+void whichGame(BST_Node* root, char* word);
 char** allStringsInGame(BST_Node* root, int gameNo, int* arrSize);
 void sameLengthWords(int game, int length);
 void nextWord(BST_Node* root);
@@ -71,13 +78,13 @@ int main() {
             // ex: 2 0 hello (delete string "hello" from game 0)
             case 2:
                 scanf("%d %s", &game, str);
-                deleteWord(root, game, str);
+                root = deleteWord(root, game, str);
                 break;
 
             // ex: 3 bye (checks if "bye" is in any of the games, return -1 if no)
             case 3:
                 scanf("%s", str);
-                whichGame(str);
+                whichGame(root, str);
                 break;
 
             // ex: 4 0 (returns all strings in game 0)
@@ -103,13 +110,7 @@ int main() {
         }
     }
 
-    BST_Node* found = find(root, "hello");
-    if (!found) printf("NULL\n");
-    if (!root->left) printf("left NULL\n");
-    if (!root->right) printf("right NULL\n");
     printTree(root);
-    printf("\n");
-    printGames(root);
 
     // Clean up
 
@@ -179,11 +180,110 @@ BST_Node* find(BST_Node* curr, char* word) {
     return NULL;
 }
 
+int isLeaf(BST_Node* node) {
+    return (node->left == NULL && node->right == NULL);
+}
+
+int hasOnlyLeftChild(BST_Node* node) {
+    return (node->left != NULL && node->right == NULL);
+}
+
+int hasOnlyRightChild(BST_Node* node) {
+    return (node->left == NULL && node->right != NULL);
+}
+
+BST_Node* minVal(BST_Node* root) {
+
+    // Root stores the minimal value.
+    if (root->left == NULL)
+        return root;
+
+    // The left subtree of the root stores the minimal value.
+    else
+        return minVal(root->left);
+}
+
+BST_Node* removeFromGame(BST_Node* root, int game, char* word) {
+    // Nothing happens in this case.
+    if (root == NULL) return NULL;
+
+    // Find the node to delete
+    BST_Node* node = find(root, word);
+
+    // Double check this exists
+    if (!node) return root;
+
+    // Remove word from the game
+    node->ptr->allowed[game] = 0;
+
+    // Word is in more than one game
+    for (int i = 0; i < NUMGAMES; i++) {
+        if (node->ptr->allowed[i] == 1) return root; // Stop
+    }
+
+    // This was the last game that had this word (delete the node using function from notes)
+    return deleteNode(root, word);
+}
+
+BST_Node* deleteNode(BST_Node* root, char* word) {
+    // delRec function from notes (modified to us strings)
+
+    // Nothing happens in this case.
+    if (root==NULL) return NULL;
+
+    // Base case - found value to delete.
+    if (strcmp(root->ptr->str, word) == 0) {
+        // Leaf node.
+        if (isLeaf(root)) {
+            freeNode(root);
+            return NULL;
+        }
+
+        // Has only a left child.
+        else if (hasOnlyLeftChild(root)) {
+            BST_Node* ret = root->left;
+            freeNode(root);
+            return ret;
+        }
+
+        // Has only a right child.
+        else if (hasOnlyRightChild(root)) {
+            BST_Node* ret = root->right;
+            freeNode(root);
+            return ret;
+        }
+
+        // two child case.
+        else {
+            BST_Node* new_del_node = minVal(root->right);
+            NYT_String* save_ptr = root->ptr;
+            root->ptr = new_del_node->ptr;
+            new_del_node->ptr = save_ptr;
+            root->right = deleteNode(root->right, new_del_node->ptr->str);
+            return root;
+        }
+    }
+
+    // Here we must go left.
+    else if (strcmp(word, root->ptr->str) < 0)
+        root->left = deleteNode(root->left, word);
+
+    // And here we must go right.
+    else
+        root->right = deleteNode(root->right, word);
+
+    // If we get here, this is the root of the tree.
+    return root;
+}
+
+void freeNode(BST_Node* root) {
+    free(root->ptr->str);
+    free(root->ptr);
+    free(root);
+}
+
 // Operation functions
 BST_Node* addWord(BST_Node* root, int game, char* word) {
-    // Debug
-    printf("Adding \"%s\" to game %d...\n", word, game);
-
     // Does the node already exist?
     BST_Node* node = find(root, word);
 
@@ -205,15 +305,25 @@ BST_Node* addWord(BST_Node* root, int game, char* word) {
 }
 
 BST_Node* deleteWord(BST_Node* root, int game, char* word) {
-    // Debug
-    printf("Deleting \"%s\" from game %d...\n", word, game);
-
-    
-    return NULL;
+    // Just a wrapper function
+    return removeFromGame(root, game, word);
 }
 
-void whichGame(char* word) {
-    printf("\"%s\" is in game ?...\n", word);
+void whichGame(BST_Node* root, char* word) {
+    // Find the node for this word
+    BST_Node* node = find(root, word);
+
+    // Double check this exists
+    if (!node) {
+        printf("-1");
+        return;
+    }
+
+    // Check and print which games it's in
+    for (int i = 0; i < NUMGAMES; i++) {
+        if (node->ptr->allowed[i] == 1) printf("%d ", i);
+    }
+    printf("\n");
 }
 
 char** allStringsInGame(BST_Node* root, int gameNo, int* arrSize) {
@@ -231,7 +341,7 @@ void nextWord(BST_Node* root) {
 
 // Debug
 void printTree(BST_Node* root) {
-    if (root == NULL) return;
+    if (root == NULL) { printf("\n"); return; }
     printTree(root->left);
     printf("%s ", root->ptr->str);
     printTree(root->right);
@@ -242,4 +352,5 @@ void printGames(BST_Node* root) {
     for (int i = 0; i < NUMGAMES; i++) {
         printf("%d ", root->ptr->allowed[i]);
     }
+    printf("\n");
 }
