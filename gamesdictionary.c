@@ -90,7 +90,16 @@ int main() {
             // ex: 4 0 (returns all strings in game 0)
             case 4:
                 scanf("%d", &game);
-                //allStringsInGame
+                int arrSize;
+                char** allStrings = allStringsInGame(root, game, &arrSize);
+                for (int i = 0; i < arrSize; i ++) {
+                    printf("%s ", allStrings[i]);
+                    free(allStrings[i]);
+                }
+                printf("\n");
+
+                free(allStrings);
+
                 break;
 
             // ex: 5 0 10 (return num of strings with the length of 10 in game 0)
@@ -229,7 +238,7 @@ BST_Node* deleteNode(BST_Node* root, char* word) {
     // delRec function from notes (modified to us strings)
 
     // Nothing happens in this case.
-    if (root==NULL) return NULL;
+    if (root == NULL) return NULL;
 
     // Base case - found value to delete.
     if (strcmp(root->ptr->str, word) == 0) {
@@ -327,8 +336,45 @@ void whichGame(BST_Node* root, char* word) {
 }
 
 char** allStringsInGame(BST_Node* root, int gameNo, int* arrSize) {
+    /* For queries of type 4, while you could just run an inorder traversal of the tree and print as necessary, for
+     * full credit, you will be required to write a function that takes in a pointer to the root of the binary search
+     * tree, an integer indicating the game number, and a pointer to an integer which will store the length of the
+     * array returned. The function should return a char**, an array of strings storing the answers for the query in
+     * alphabetical order.
+     *
+     * To implement this function, please initially allocate a char** of size 200,000, or the size of the number of
+     * nodes in the tree, copying in each string into this char** (using a deep copy so malloc just the right amount
+     * of space for each string and then copy it in). Then, before returning, realloc the char** so that it's the right
+     * size */
 
-    return NULL;
+    if (root == NULL) {
+        *arrSize = 0;
+        return NULL; // no tree
+    }
+
+    int size = 0;
+    BST_Node* curr = root;
+
+    char** allStrings = malloc(sizeof(char*) * 200000);
+    for (int i = 0; i < 200000; i++) {
+        int len = strlen(curr->ptr->str);
+
+        // Add string to array if in this game
+        if (curr->ptr->allowed[gameNo] == 1) {
+            allStrings[i] = malloc(sizeof(char) * (len+1));
+            strcpy(allStrings[i], curr->ptr->str);
+            size++; // increase size
+        }
+
+        // Move on to next node
+        if (curr != NULL) curr = curr->left;
+        else curr = curr->right;
+    }
+
+    allStrings = realloc(allStrings, sizeof(char*) * size);
+
+    *arrSize = size; // size of the return array
+    return allStrings;
 }
 
 void sameLengthWords(int game, int length) {
