@@ -32,13 +32,14 @@ BST_Node* minVal(BST_Node* root);
 BST_Node* removeFromGame(BST_Node* root, int game, char* word);
 BST_Node* deleteNode(BST_Node* root, char* word);
 void freeNode(BST_Node* root);
+void inorderFilter(BST_Node* root, int gameNo, char** allStrings, int* size);
 
 BST_Node* addWord(BST_Node* root, int game, char* word);
 BST_Node* deleteWord(BST_Node* root, int game, char* word);
 void whichGame(BST_Node* root, char* word);
 char** allStringsInGame(BST_Node* root, int gameNo, int* arrSize);
-void sameLengthWords(int game, int length);
-void nextWord(BST_Node* root);
+void sameLengthWords(BST_Node* root, int game, int length, int* count);
+void nextWord(BST_Node* root, char* word);
 
 void printTree(BST_Node* root);
 void printGames(BST_Node* root);
@@ -68,17 +69,22 @@ int main() {
         // Determine the data to print depending on the requested operation
         int game, length;
         char str[MAXSIZE+1];
+
         switch (op) {
             // ex: 1 0 hello (add string "hello" to game 0)
             case 1:
                 scanf("%d %s", &game, str);
+
                 root = addWord(root, game, str);
+
                 break;
 
             // ex: 2 0 hello (delete string "hello" from game 0)
             case 2:
                 scanf("%d %s", &game, str);
+
                 root = deleteWord(root, game, str);
+
                 break;
 
             // ex: 3 bye (checks if "bye" is in any of the games, return -1 if no)
@@ -90,13 +96,14 @@ int main() {
             // ex: 4 0 (returns all strings in game 0)
             case 4:
                 scanf("%d", &game);
+
                 int arrSize;
+
                 char** allStrings = allStringsInGame(root, game, &arrSize);
                 for (int i = 0; i < arrSize; i ++) {
-                    printf("%s ", allStrings[i]);
+                    printf("%s\n", allStrings[i]);
                     free(allStrings[i]);
                 }
-                printf("\n");
 
                 free(allStrings);
 
@@ -105,13 +112,20 @@ int main() {
             // ex: 5 0 10 (return num of strings with the length of 10 in game 0)
             case 5:
                 scanf("%d %d", &game, &length);
-                sameLengthWords(game, length);
+
+                int count = 0;
+                sameLengthWords(root, game, length, &count);
+
+                printf("%d\n", count);
+
                 break;
 
             // ex: 6 hello (return the next string alphabetically)
             case 6:
                 scanf("%s", str);
-                //nextWord(str);
+
+                nextWord(root, str);
+
                 break;
 
             default:
@@ -119,7 +133,7 @@ int main() {
         }
     }
 
-    printTree(root);
+    //printTree(root);
 
     // Clean up
 
@@ -291,6 +305,27 @@ void freeNode(BST_Node* root) {
     free(root);
 }
 
+void inorderFilter(BST_Node* root, int gameNo, char** allStrings, int* size) {
+    // traversal.c from notes
+
+    if (root == NULL) return; // no tree
+
+    // Move left...
+    inorderFilter(root->left, gameNo, allStrings, size);
+
+    // Add string to array if in this game
+    if (root->ptr->allowed[gameNo] == 1) {
+        int i = *size; // use *size as the index
+        int len = strlen(root->ptr->str);
+        allStrings[i] = malloc(sizeof(char) * (len+1));
+        strcpy(allStrings[i], root->ptr->str);
+        (*size)++; // increase size
+    }
+
+    // Move right...
+    inorderFilter(root->right, gameNo, allStrings, size);
+}
+
 // Operation functions
 BST_Node* addWord(BST_Node* root, int game, char* word) {
     // Does the node already exist?
@@ -324,7 +359,7 @@ void whichGame(BST_Node* root, char* word) {
 
     // Double check this exists
     if (!node) {
-        printf("-1");
+        printf("-1\n");
         return;
     }
 
@@ -353,23 +388,9 @@ char** allStringsInGame(BST_Node* root, int gameNo, int* arrSize) {
     }
 
     int size = 0;
-    BST_Node* curr = root;
 
     char** allStrings = malloc(sizeof(char*) * 200000);
-    for (int i = 0; i < 200000; i++) {
-        int len = strlen(curr->ptr->str);
-
-        // Add string to array if in this game
-        if (curr->ptr->allowed[gameNo] == 1) {
-            allStrings[i] = malloc(sizeof(char) * (len+1));
-            strcpy(allStrings[i], curr->ptr->str);
-            size++; // increase size
-        }
-
-        // Move on to next node
-        if (curr != NULL) curr = curr->left;
-        else curr = curr->right;
-    }
+    inorderFilter(root, gameNo, allStrings, &size);
 
     allStrings = realloc(allStrings, sizeof(char*) * size);
 
@@ -377,12 +398,35 @@ char** allStringsInGame(BST_Node* root, int gameNo, int* arrSize) {
     return allStrings;
 }
 
-void sameLengthWords(int game, int length) {
-    printf("same length...\n");
+void sameLengthWords(BST_Node* root, int game, int length, int* count) {
+    if (root == NULL) return; // no tree or end
+
+    // Go left...
+    sameLengthWords(root->left, game, length, count);
+
+    // Check if this word is in the game and is the correct length
+    if (root->ptr->allowed[game] == 1) {
+        int len = strlen(root->ptr->str);
+        if (len == length) (*count)++; // increase count of how many are the right length
+    }
+
+    // Go right...
+    sameLengthWords(root->right, game, length, count);
 }
 
-void nextWord(BST_Node* root) {
+void nextWord(BST_Node* root, char* word) {
+    if (root == NULL) return; // no tree or last node
 
+    // Get the node with this word
+    BST_Node* node = find(root, word);
+
+    // Move to next node
+    if (isLeaf(node))
+        printf("NO SUCCESSOR");
+    else if (hasOnlyLeftChild(node))
+        printf("%s\n", node->left->ptr->str);
+    else if (hasOnlyRightChild(node))
+        printf("%s\n", node->right->ptr->str);
 }
 
 // Debug
