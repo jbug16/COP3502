@@ -21,28 +21,31 @@ typedef struct BST_Node {
 } BST_Node;
 
 // Function definitions
-NYT_String* createString(const char* word, int game);
-BST_Node* createNode(const char* word, int game);
-BST_Node* insert(BST_Node* root, BST_Node* node);
-BST_Node* find(BST_Node* curr, char* word);
-int isLeaf(BST_Node* node);
-int hasOnlyLeftChild(BST_Node* node);
-int hasOnlyRightChild(BST_Node* node);
-BST_Node* minVal(BST_Node* root);
-BST_Node* removeFromGame(BST_Node* root, int game, char* word);
-BST_Node* deleteNode(BST_Node* root, char* word);
-void freeNode(BST_Node* root);
-void inorderFilter(BST_Node* root, int gameNo, char** allStrings, int* size);
+    // Helper
+    NYT_String* createString(const char* word, int game);
+    BST_Node* createNode(const char* word, int game);
+    BST_Node* insert(BST_Node* root, BST_Node* node);
+    BST_Node* find(BST_Node* curr, char* word);
+    int isLeaf(BST_Node* node);
+    int hasOnlyLeftChild(BST_Node* node);
+    int hasOnlyRightChild(BST_Node* node);
+    BST_Node* minVal(BST_Node* root);
+    BST_Node* removeFromGame(BST_Node* root, int game, char* word);
+    BST_Node* deleteNode(BST_Node* root, char* word);
+    void freeNode(BST_Node* root);
+    void inorderFilter(BST_Node* root, int gameNo, char** allStrings, int* size);
 
-BST_Node* addWord(BST_Node* root, int game, char* word);
-BST_Node* deleteWord(BST_Node* root, int game, char* word);
-void whichGame(BST_Node* root, char* word);
-char** allStringsInGame(BST_Node* root, int gameNo, int* arrSize);
-void sameLengthWords(BST_Node* root, int game, int length, int* count);
-void nextWord(BST_Node* root, char* word);
+    // Queries
+    BST_Node* addWord(BST_Node* root, int game, char* word);
+    BST_Node* deleteWord(BST_Node* root, int game, char* word);
+    void whichGame(BST_Node* root, char* word);
+    char** allStringsInGame(BST_Node* root, int gameNo, int* arrSize);
+    void sameLengthWords(BST_Node* root, int game, int length, int* count);
+    BST_Node* nextWord(BST_Node* root, char* word);
 
-void printTree(BST_Node* root);
-void printGames(BST_Node* root);
+    // Debug
+    void printTree(BST_Node* root);
+    void printGames(BST_Node* root);
 
 /*
 1. Add a string to a game.
@@ -90,7 +93,9 @@ int main() {
             // ex: 3 bye (checks if "bye" is in any of the games, return -1 if no)
             case 3:
                 scanf("%s", str);
+
                 whichGame(root, str);
+
                 break;
 
             // ex: 4 0 (returns all strings in game 0)
@@ -100,9 +105,11 @@ int main() {
                 int arrSize;
 
                 char** allStrings = allStringsInGame(root, game, &arrSize);
-                for (int i = 0; i < arrSize; i ++) {
-                    printf("%s\n", allStrings[i]);
-                    free(allStrings[i]);
+                for (int j = 0; j < arrSize; j++) {
+                    printf("%s\n", allStrings[j]);
+
+                    // Clean up
+                    free(allStrings[j]);
                 }
 
                 free(allStrings);
@@ -114,7 +121,7 @@ int main() {
                 scanf("%d %d", &game, &length);
 
                 int count = 0;
-                sameLengthWords(root, game, length, &count);
+                sameLengthWords(root, game, length, &count); // pass in a ref to count and update
 
                 printf("%d\n", count);
 
@@ -124,7 +131,11 @@ int main() {
             case 6:
                 scanf("%s", str);
 
-                nextWord(root, str);
+                BST_Node* node = nextWord(root, str);
+                if (node == NULL)
+                    printf("NO SUCCESSOR\n");
+                else
+                    printf("%s\n", node->ptr->str);
 
                 break;
 
@@ -132,10 +143,6 @@ int main() {
                 break;
         }
     }
-
-    //printTree(root);
-
-    // Clean up
 
     return 0;
 }
@@ -382,6 +389,7 @@ char** allStringsInGame(BST_Node* root, int gameNo, int* arrSize) {
      * of space for each string and then copy it in). Then, before returning, realloc the char** so that it's the right
      * size */
 
+    // Base care
     if (root == NULL) {
         *arrSize = 0;
         return NULL; // no tree
@@ -389,9 +397,11 @@ char** allStringsInGame(BST_Node* root, int gameNo, int* arrSize) {
 
     int size = 0;
 
+    // Store strings
     char** allStrings = malloc(sizeof(char*) * 200000);
     inorderFilter(root, gameNo, allStrings, &size);
 
+    // Resize the array
     allStrings = realloc(allStrings, sizeof(char*) * size);
 
     *arrSize = size; // size of the return array
@@ -414,19 +424,19 @@ void sameLengthWords(BST_Node* root, int game, int length, int* count) {
     sameLengthWords(root->right, game, length, count);
 }
 
-void nextWord(BST_Node* root, char* word) {
-    if (root == NULL) return; // no tree or last node
+BST_Node* nextWord(BST_Node* root, char* word) {
+    if (root == NULL) return NULL; // no tree or last node
 
-    // Get the node with this word
-    BST_Node* node = find(root, word);
+    // So much going left...
+    if (strcmp(word, root->ptr->str) < 0) {
+        BST_Node* node = nextWord(root->left, word);
 
-    // Move to next node
-    if (isLeaf(node))
-        printf("NO SUCCESSOR");
-    else if (hasOnlyLeftChild(node))
-        printf("%s\n", node->left->ptr->str);
-    else if (hasOnlyRightChild(node))
-        printf("%s\n", node->right->ptr->str);
+        if (node) return node;
+        else return root;
+    }
+
+    // So much going right...
+    else return nextWord(root->right, word);
 }
 
 // Debug
